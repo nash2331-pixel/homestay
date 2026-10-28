@@ -13,12 +13,10 @@ var HOMESTAY_INFO = {
   address: "ISI ALAMAT HOMESTAY",
   mapLink: "ISI LINK GOOGLE MAPS",
   checkInTime: "ISI MASA MASUK (contoh: 2:00 PM)",
-  checkOutTime: "ISI MASA KELUAR (contoh: 12:00 PM)",
-  paymentDetails:
-    "Bank: ISI NAMA BANK\n" +
-    "No. akaun: ISI NO. AKAUN\n" +
-    "Nama: ISI NAMA PEMILIK AKAUN\n" +
-    "DuitNow: ISI NO. DUITNOW"
+  checkOutTime: "ISI MASA KELUAR (contoh: 12:00 PM)"
+  // Bank details are NOT here, because this file is public on the website.
+  // They are saved in Google Apps Script (Script Properties → PAYMENT_DETAILS)
+  // and the server gives them only to the owner page. See DEPLOY.md.
 };
 
 // ---------- 2. Words you can use inside messages ----------
@@ -32,8 +30,9 @@ var HOMESTAY_INFO = {
 // {balance}         balance to pay on arrival
 // {priceOneNight}   price for 1 night (from pricing.js)
 // {priceManyNights} price per night for 2+ nights (from pricing.js)
-// {address} {mapLink} {checkInTime} {checkOutTime} {paymentDetails}
+// {address} {mapLink} {checkInTime} {checkOutTime}
 //                   from HOMESTAY_INFO above
+// {paymentDetails}  bank details, sent by the server to the owner page only
 
 // ---------- 3. The messages ----------
 var MESSAGES = {

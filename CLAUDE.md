@@ -51,6 +51,9 @@ Examples:
 - Data lives in a **Google Sheet** (tabs: Bookings, Payments), reached only through
   a **Google Apps Script** web app (`apps-script/Code.js`). Pages never store bookings locally.
 - Two PINs, stored in Script Properties (`OWNER_PIN`, `HELPER_PIN`), never in code.
+- Bank details for the deposit message are in Script Properties (`PAYMENT_DETAILS`,
+  `|` = new line), sent only to the owner page. The site and repo are public, so
+  nothing private goes in any file.
   The **server** checks the PIN and the role on every request:
   - owner: everything
   - helper: only today's check-ins/check-outs; record cash (server computes the amount);

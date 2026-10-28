@@ -90,6 +90,11 @@
     check("Fills in {name}", fillTemplate("Hai {name}!", { name: "Siti" }), "Hai Siti!");
     check("Leaves unknown {words} alone", fillTemplate("Hai {nama}", { name: "Siti" }), "Hai {nama}");
 
+    // Bank details must never be in the public messages.js file.
+    check("messages.js has no bank details in it", HOMESTAY_INFO.paymentDetails, undefined);
+    // The owner page gets them from the server after login; pretend that happened.
+    HOMESTAY_INFO.paymentDetails = "Maybank 1234567890";
+
     var sample = {
       name: "Siti Aminah", phone: "012-345 6789",
       checkIn: "2026-11-06", checkOut: "2026-11-09",
@@ -109,6 +114,8 @@
     check("Confirm message shows the balance", buildMessage("confirm", sample, "en").indexOf("RM600") !== -1, true);
     check("Rates message shows the total", buildMessage("rates", sample, "ms").indexOf("RM750") !== -1, true);
     check("Rates message shows RM300 and RM250", /RM300[\s\S]*RM250/.test(buildMessage("rates", sample, "id")), true);
+    check("Deposit message shows the bank details from the server",
+      buildMessage("deposit", sample, "ms").indexOf("Maybank 1234567890") !== -1, true);
 
     // --- WhatsApp link ---
     check("Link uses the converted number",
@@ -172,6 +179,16 @@
     check("Missing PIN gives nothing", findRole(undefined, pins), null);
     check("Empty PIN can't match a PIN that was never set", findRole("", { owner: null, helper: null }), null);
     check("Nothing matches when PINs are not set", findRole("1234", { owner: null, helper: null }), null);
+
+    // --- Bank details (kept on the server) ---
+    check("Bank details: | starts a new line",
+      paymentLines("Maybank 1234567890 | Nama: Siti binti Ali | DuitNow 012-345 6789"),
+      "Maybank 1234567890\nNama: Siti binti Ali\nDuitNow 012-345 6789");
+    check("Bank details: a / in a name is kept", paymentLines("Nama: Raju a/l Muthu"), "Nama: Raju a/l Muthu");
+    check("Bank details: not set gives empty text", paymentLines(null), "");
+    check("Bank details: extra | are ignored", paymentLines("| Maybank 123 ||"), "Maybank 123");
+    check("Helper's today view has no bank details",
+      JSON.stringify(helperTodayView([], "2026-10-25")).indexOf("paymentDetails"), -1);
 
     // --- Money left (server copy) ---
     check("Server: amount left = total - payments",

@@ -11,6 +11,8 @@
 //
 //  The PINs are NOT in this file. They are saved in
 //  Project Settings → Script Properties as OWNER_PIN and HELPER_PIN.
+//  The bank details for the deposit message are saved there too, as
+//  PAYMENT_DETAILS, and are only sent to the owner page.
 // ============================================================
 
 var TIME_ZONE = "Asia/Kuching";
@@ -40,6 +42,8 @@ function setup() {
     Logger.log("Tabs are ready. PINs are NOT set yet: add OWNER_PIN and HELPER_PIN in Project Settings → Script Properties.");
   } else if (owner === helper) {
     Logger.log("Tabs are ready. PROBLEM: OWNER_PIN and HELPER_PIN are the same. Please make them different.");
+  } else if (!props.getProperty("PAYMENT_DETAILS")) {
+    Logger.log("Tabs and PINs are ready. Bank details are not set yet: add PAYMENT_DETAILS in Script Properties for the deposit message.");
   } else {
     Logger.log("All good: tabs are ready and both PINs are set.");
   }
@@ -113,9 +117,26 @@ function findRole(pin, pins) {
 }
 
 // ---------- Owner actions (each returns the full, fresh list) ----------
+
+// What every owner action sends back: all bookings, plus the bank details
+// for the "ask for deposit" WhatsApp message. Those are kept in Script
+// Properties so they are never in the public files, and the helper never gets them.
+function ownerAnswer() {
+  var details = PropertiesService.getScriptProperties().getProperty("PAYMENT_DETAILS");
+  return { bookings: allBookings(), paymentDetails: paymentLines(details) };
+}
+
+// Script Properties hold one line, so "|" marks a new line:
+// "Maybank 1234 | DuitNow 012-345 6789" -> two lines. (Tested in tests.html.)
+function paymentLines(text) {
+  if (!text) return "";
+  return String(text).split("|").map(function (line) { return line.trim(); })
+    .filter(function (line) { return line; }).join("\n");
+}
+
 var OWNER_ACTIONS = {
   list: function () {
-    return { bookings: allBookings() };
+    return ownerAnswer();
   },
 
   addBooking: function (d) {
@@ -141,7 +162,7 @@ var OWNER_ACTIONS = {
       msgLang: "ms",
       createdAt: nowString()
     });
-    return { bookings: allBookings() };
+    return ownerAnswer();
   },
 
   updateBooking: function (d) {
@@ -149,13 +170,13 @@ var OWNER_ACTIONS = {
     if (d.changes && d.changes.cleaningPaid !== undefined) changes.cleaningPaid = d.changes.cleaningPaid === true;
     if (d.changes && d.changes.msgLang !== undefined) changes.msgLang = oneOf(d.changes.msgLang, ALLOWED_MSG_LANGS);
     updateRow("Bookings", BOOKING_COLUMNS, d.id, changes);
-    return { bookings: allBookings() };
+    return ownerAnswer();
   },
 
   deleteBooking: function (d) {
     deleteRows("Bookings", BOOKING_COLUMNS, "id", d.id);
     deleteRows("Payments", PAYMENT_COLUMNS, "bookingId", d.id);
-    return { bookings: allBookings() };
+    return ownerAnswer();
   },
 
   addPayment: function (d) {
@@ -170,17 +191,17 @@ var OWNER_ACTIONS = {
       date: cleanDate(d.date),
       createdAt: nowString()
     });
-    return { bookings: allBookings() };
+    return ownerAnswer();
   },
 
   setTransferred: function (d) {
     updateRow("Payments", PAYMENT_COLUMNS, d.paymentId, { transferred: d.transferred === true });
-    return { bookings: allBookings() };
+    return ownerAnswer();
   },
 
   deletePayment: function (d) {
     deleteRows("Payments", PAYMENT_COLUMNS, "id", d.paymentId);
-    return { bookings: allBookings() };
+    return ownerAnswer();
   }
 };
 

@@ -46,7 +46,14 @@ The PINs are kept in Google's settings, **not** in any file, so nobody can read 
 3. Property: `OWNER_PIN`, Value: a 6-digit number for your mom.
 4. Click **Add script property** again.
    Property: `HELPER_PIN`, Value: a **different** 6-digit number for the helper.
-5. Click **Save script properties**.
+5. Click **Add script property** once more for the bank details used in the
+   "Minta deposit" WhatsApp message.
+   Property: `PAYMENT_DETAILS`, Value: your bank details on **one line**, with `|`
+   where a new line should start, for example:
+   `Bank: Maybank | No. akaun: 1234567890 | Nama: Siti binti Ali | DuitNow: 012-345 6789`
+   These stay with Google and are only given to the owner page after the owner PIN,
+   so they are never on the public website or GitHub.
+6. Click **Save script properties**.
 
 Tips: use 6 digits, not 4. Avoid birthdays, 123456 or 000000. Write them down somewhere safe.
 To change a PIN later, just change it here. Nothing else needs updating, but the person
@@ -68,6 +75,8 @@ will need to type the new PIN once.
    You can delete the empty "Sheet1" tab.
 
 If the log says the PINs are not set or are the same, fix step 4 and run setup again.
+If it says the bank details are not set, add `PAYMENT_DETAILS` (step 4); everything
+else still works without it.
 
 ## Step 6: Publish the server (deploy)
 

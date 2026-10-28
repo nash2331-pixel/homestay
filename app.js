@@ -85,7 +85,8 @@ var WORDS = {
     err_locked: "Terlalu banyak PIN salah. Tunggu 15 minit.",
     err_network: "Tak dapat sambung. Check internet dan cuba lagi.",
     err_server: "Ada masalah:",
-    err_noServer: "Alamat server belum diisi dalam config.js."
+    err_noServer: "Alamat server belum diisi dalam config.js.",
+    noBankDetails: "(Butiran bank belum diisi)"
   },
   en: {
     title: "New Booking",
@@ -167,7 +168,8 @@ var WORDS = {
     err_locked: "Too many wrong PINs. Wait 15 minutes.",
     err_network: "Can't connect. Check the internet and try again.",
     err_server: "Something went wrong:",
-    err_noServer: "The server address is not filled in config.js yet."
+    err_noServer: "The server address is not filled in config.js yet.",
+    noBankDetails: "(Bank details not set yet)"
   }
 };
 
@@ -226,9 +228,11 @@ function foldOut(key, title) {
   return box;
 }
 
-// After every change the server sends back the full, fresh list.
+// After every change the server sends back the full, fresh list,
+// plus the bank details for the deposit message (kept off the public files).
 function useServerAnswer(result) {
   bookings = result.bookings;
+  HOMESTAY_INFO.paymentDetails = result.paymentDetails || t("noBankDetails");
   showBookings();
 }
 
