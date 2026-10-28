@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homestay tests</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; font-size: 17px; padding: 16px; background: #fff; }
+    .pass { color: #2e7d5b; }
+    .fail { color: #b3261e; font-weight: 700; }
+    #result { font-size: 22px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>Homestay tests</h1>
+  <p id="result"></p>
+  <ul id="list"></ul>
+
+  <script src="pricing.js"></script>
+  <script src="payments.js"></script>
+  <script src="messages.js"></script>
+  <script src="whatsapp.js"></script>
+  <!-- The server code, loaded here only so its calculations can be tested. -->
+  <script src="apps-script/Code.js"></script>
+  <script>
+    // Open this page in a browser. Each line shows PASS (green) or FAIL (red).
+    var passed = 0;
+    var failed = 0;
+
+    function check(description, actual, expected) {
+      var ok = actual === expected;
+      var li = document.createElement("li");
+      li.className = ok ? "pass" : "fail";
+      li.textContent = (ok ? "PASS " : "FAIL ") + description +
+        (ok ? "" : " (expected " + expected + ", got " + actual + ")");
+      document.getElementById("list").appendChild(li);
+      if (ok) passed++; else failed++;
+    }
+
+    // --- Price per night ---
+    check("1 night costs RM300 total", calculatePrice(1).total, 300);
+    check("2 nights cost RM500 (RM250 x 2, not 300 + 250)", calculatePrice(2).total, 500);
+    check("3 nights cost RM750", calculatePrice(3).total, 750);
+    check("7 nights cost RM1750", calculatePrice(7).total, 1750);
+    check("1 night price per night is RM300", calculatePrice(1).pricePerNight, 300);
+    check("2+ nights price per night is RM250", calculatePrice(2).pricePerNight, 250);
+
+    // --- Deposit, balance, cleaning ---
+    check("Deposit is always RM150", calculatePrice(3).deposit, 150);
+    check("Balance for 1 night = 300 - 150 = RM150", calculatePrice(1).balance, 150);
+    check("Balance for 3 nights = 750 - 150 = RM600", calculatePrice(3).balance, 600);
+    check("Cleaning is RM70 per checkout", calculatePrice(2).cleaning, 70);
+
+    // --- No stay means no charge ---
+    check("0 nights costs nothing", calculatePrice(0).total, 0);
+    check("0 nights has no deposit", calculatePrice(0).deposit, 0);
+
+    // --- Counting nights from dates ---
+    check("23 Oct to 24 Oct is 1 night", countNights("2026-10-23", "2026-10-24"), 1);
+    check("23 Oct to 26 Oct is 3 nights", countNights("2026-10-23", "2026-10-26"), 3);
+    check("Across months: 30 Oct to 2 Nov is 3 nights", countNights("2026-10-30", "2026-11-02"), 3);
+    check("Across years: 31 Dec to 2 Jan is 2 nights", countNights("2026-12-31", "2027-01-02"), 2);
+    check("Same day in and out is 0 nights", countNights("2026-10-23", "2026-10-23"), 0);
+    check("Check-out before check-in is 0 nights", countNights("2026-10-25", "2026-10-23"), 0);
+    check("Missing date is 0 nights", countNights("", "2026-10-23"), 0);
+
+    // --- Phone numbers for WhatsApp ---
+    check("Malaysian mobile 012-345 6789", toWhatsAppNumber("012-345 6789"), "60123456789");
+    check("Malaysian 011 mobile (11 digits)", toWhatsAppNumber("011-2345 6789"), "601123456789");
+    check("Malaysian with +60", toWhatsAppNumber("+60 12-345 6789"), "60123456789");
+    check("Malaysian with 60, no plus", toWhatsAppNumber("60123456789"), "60123456789");
+    check("Malaysian with 0060", toWhatsAppNumber("0060123456789"), "60123456789");
+    check("Malaysian typed without the 0", toWhatsAppNumber("123456789"), "60123456789");
+    check("Kuching landline 082-123456 stays Malaysian", toWhatsAppNumber("082-123456"), "6082123456");
+    check("Indonesian mobile 0812-3456-7890", toWhatsAppNumber("0812-3456-7890"), "6281234567890");
+    check("Indonesian with +62", toWhatsAppNumber("+62 812 3456 7890"), "6281234567890");
+    check("Indonesian with 62, no plus", toWhatsAppNumber("6281234567890"), "6281234567890");
+    check("Brackets and dots are ignored", toWhatsAppNumber("(012) 345.6789"), "60123456789");
+    check("Empty phone gives nothing", toWhatsAppNumber(""), "");
+    check("Letters give nothing", toWhatsAppNumber("abc"), "");
+    check("Too short gives nothing", toWhatsAppNumber("12345"), "");
+
+    // --- Dates in messages ---
+    check("BM date", formatDate("2026-11-06", "ms"), "Jumaat, 6 Nov 2026");
+    check("Indonesian date", formatDate("2026-11-06", "id"), "Jumat, 6 Nov 2026");
+    check("English date", formatDate("2026-11-06", "en"), "Friday, 6 Nov 2026");
+    check("BM month name Ogos", formatDate("2026-08-01", "ms"), "Sabtu, 1 Ogos 2026");
+
+    // --- Filling in messages ---
+    check("Fills in {name}", fillTemplate("Hai {name}!", { name: "Siti" }), "Hai Siti!");
+    check("Leaves unknown {words} alone", fillTemplate("Hai {nama}", { name: "Siti" }), "Hai {nama}");
+
+    var sample = {
+      name: "Siti Aminah", phone: "012-345 6789",
+      checkIn: "2026-11-06", checkOut: "2026-11-09",
+      nights: 3, guests: 4, total: 750, deposit: 150, balance: 600
+    };
+    // Every message in every language must be fully filled in.
+    // If you edit messages.js and mistype a {word}, one of these will FAIL.
+    ["ms", "id", "en"].forEach(function (lang) {
+      MESSAGE_TYPES.forEach(function (type) {
+        var text = buildMessage(type, sample, lang);
+        check(lang + " '" + type + "' message exists and has the guest name",
+          text.indexOf("Siti Aminah") !== -1, true);
+        var leftover = text.match(/\{\w+\}/);
+        check(lang + " '" + type + "' has no unfilled {words}", leftover ? leftover[0] : "none", "none");
+      });
+    });
+    check("Confirm message shows the balance", buildMessage("confirm", sample, "en").indexOf("RM600") !== -1, true);
+    check("Rates message shows the total", buildMessage("rates", sample, "ms").indexOf("RM750") !== -1, true);
+    check("Rates message shows RM300 and RM250", /RM300[\s\S]*RM250/.test(buildMessage("rates", sample, "id")), true);
+
+    // --- WhatsApp link ---
+    check("Link uses the converted number",
+      whatsAppLink("012-345 6789", "Hai").indexOf("https://wa.me/60123456789?text=") === 0, true);
+    check("Link encodes spaces and new lines",
+      whatsAppLink("012-345 6789", "Hai Siti\nOK"), "https://wa.me/60123456789?text=Hai%20Siti%0AOK");
+    check("No link for a bad number", whatsAppLink("abc", "Hai"), "");
+
+    // --- Payments on one booking ---
+    var payBooking = { total: 750, payments: [{ amount: 150 }, { amount: 300 }] };
+    check("Paid so far adds up payments", paidSoFar(payBooking), 450);
+    check("Amount left = total - paid", amountLeft(payBooking), 300);
+    check("Booking with no payments list counts as 0 paid", paidSoFar({ total: 500 }), 0);
+    check("Paying too much leaves 0, not a negative number",
+      amountLeft({ total: 300, payments: [{ amount: 350 }] }), 0);
+    check("Money adds up without rounding mistakes (0.1 + 0.2)", addMoney(0.1, 0.2), 0.3);
+
+    // --- Dashboard ---
+    // Pretend today is 25 Oct 2026.
+    var dashBookings = [
+      { // A: checked out, fully paid, helper still holds RM600 cash, cleaning not paid
+        total: 750, cleaning: 70, checkIn: "2026-10-20", checkOut: "2026-10-23", cleaningPaid: false,
+        payments: [
+          { amount: 150, method: "duitnow", by: "owner", transferred: false, date: "2026-10-10" },
+          { amount: 600, method: "cash", by: "helper", transferred: false, date: "2026-10-20" }
+        ]
+      },
+      { // B: future stay, deposit paid last month
+        total: 500, cleaning: 70, checkIn: "2026-11-06", checkOut: "2026-11-08", cleaningPaid: false,
+        payments: [{ amount: 150, method: "bank", by: "owner", transferred: false, date: "2026-09-30" }]
+      },
+      { // C: checks out today, cleaning paid, helper already transferred
+        total: 300, cleaning: 70, checkIn: "2026-10-24", checkOut: "2026-10-25", cleaningPaid: true,
+        payments: [{ amount: 100, method: "cash", by: "helper", transferred: true, date: "2026-10-24" }]
+      },
+      { // D: old booking saved before payments existed
+        total: 300, cleaning: 70, checkIn: "2026-09-30", checkOut: "2026-10-01"
+      }
+    ];
+    var d = dashboardTotals(dashBookings, "2026-10-25");
+    check("Still to collect: 350 + 200 + 300 = RM850", d.toCollect, 850);
+    check("Still to collect counts 3 bookings", d.toCollectCount, 3);
+    check("Money with helper: only the RM600 not transferred", d.withHelper, 600);
+    check("Money with helper counts 1 payment", d.withHelperCount, 1);
+    check("Unpaid cleaning: A and D checked out and not paid = RM140", d.cleaningUnpaid, 140);
+    check("Unpaid cleaning ignores future stays (B)", d.cleaningUnpaidCount, 2);
+    check("This month's income: 150 + 600 + 100 (not September's 150)", d.monthIncome, 850);
+    check("This month's cleaning: A, C, D check out in October = RM210", d.monthCleaning, 210);
+    check("This month's profit: 850 - 210 = RM640", d.monthNet, 640);
+    check("Empty list gives all zeros", dashboardTotals([], "2026-10-25").monthNet, 0);
+
+    // ===== Server (apps-script/Code.js) =====
+
+    // --- PIN check ---
+    var pins = { owner: "482915", helper: "730461" };
+    check("Owner PIN gives owner", findRole("482915", pins), "owner");
+    check("Helper PIN gives helper", findRole("730461", pins), "helper");
+    check("Spaces around the PIN are ignored", findRole(" 730461 ", pins), "helper");
+    check("Wrong PIN gives nothing", findRole("111111", pins), null);
+    check("Empty PIN gives nothing", findRole("", pins), null);
+    check("Missing PIN gives nothing", findRole(undefined, pins), null);
+    check("Empty PIN can't match a PIN that was never set", findRole("", { owner: null, helper: null }), null);
+    check("Nothing matches when PINs are not set", findRole("1234", { owner: null, helper: null }), null);
+
+    // --- Money left (server copy) ---
+    check("Server: amount left = total - payments",
+      leftToPay({ total: 750, payments: [{ amount: 150 }] }), 600);
+    check("Server: overpaid leaves 0", leftToPay({ total: 300, payments: [{ amount: 400 }] }), 0);
+    check("Server: no payments list means full amount", leftToPay({ total: 300 }), 300);
+
+    // --- What the helper is sent ---
+    var view = helperTodayView([
+      { id: "a", name: "Dewi", phone: "0812-3456-7890", checkIn: "2026-10-25", checkOut: "2026-10-28",
+        total: 750, cleaningPaid: false, guests: 2, source: "poster", payments: [{ amount: 150 }] },
+      { id: "b", name: "Siti", phone: "012-345 6789", checkIn: "2026-10-23", checkOut: "2026-10-25",
+        total: 500, cleaningPaid: true, guests: 3, source: "video", payments: [{ amount: 500 }] },
+      { id: "c", name: "Ali", phone: "013-111 2222", checkIn: "2026-11-01", checkOut: "2026-11-03",
+        total: 500, cleaningPaid: false, payments: [] }
+    ], "2026-10-25");
+    check("Helper sees 1 arrival today", view.checkIns.length, 1);
+    check("...it is Dewi, owing RM600", view.checkIns[0].name + " " + view.checkIns[0].left, "Dewi 600");
+    check("Helper sees 1 departure today, Siti", view.checkOuts[0].name, "Siti");
+    check("...with cleaning ticked", view.checkOuts[0].cleaningPaid, true);
+    check("Helper is NOT sent other days' guests (Ali)", JSON.stringify(view).indexOf("Ali"), -1);
+    check("Helper is NOT sent totals, sources or payment lists",
+      Object.keys(view.checkIns[0]).sort().join(","), "cleaningPaid,id,left,name,phone");
+
+    // --- Reading Sheet rows ---
+    var row = rowToObject(["x1", "Siti", "012-345 6789", "2026-10-21", "2026-10-24", "3", "video",
+      "3", "1,250", "150", "600", "70", "TRUE", "ms", "2026-10-20 10:00"], BOOKING_COLUMNS);
+    check("Sheet row: phone keeps its leading 0", row.phone, "012-345 6789");
+    check("Sheet row: date stays as text", row.checkIn, "2026-10-21");
+    check("Sheet row: numbers become numbers (even with a comma)", row.total, 1250);
+    check("Sheet row: TRUE becomes true", row.cleaningPaid, true);
+    check("Sheet row: FALSE becomes false",
+      rowToObject(["p1", "x1", "150", "cash", "helper", "FALSE", "2026-10-25", ""], PAYMENT_COLUMNS).transferred, false);
+
+    // --- Checking what pages send ---
+    function throws(fn) { try { fn(); return false; } catch (e) { return true; } }
+    check("Server rejects a bad date", throws(function () { cleanDate("25/10/2026"); }), true);
+    check("Server accepts a good date", cleanDate("2026-10-25"), "2026-10-25");
+    check("Server rejects a negative amount", throws(function () { cleanNumber(-5, 0.01, 1000000); }), true);
+    check("Server rejects text as a number", throws(function () { cleanNumber("abc", 0, 10); }), true);
+    check("Server rejects an unknown payment method", throws(function () { oneOf("bitcoin", ALLOWED_METHODS); }), true);
+    check("Server rejects a very long name", throws(function () { cleanText(new Array(200).join("x"), 100); }), true);
+
+    var result = document.getElementById("result");
+    result.textContent = failed === 0
+      ? "All " + passed + " tests passed"
+      : failed + " failed, " + passed + " passed";
+    result.className = failed === 0 ? "pass" : "fail";
+  </script>
+</body>
+</html>

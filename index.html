@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homestay</title>
+  <style>
+    /* Big text and big buttons so it is easy to use on an iPhone. */
+    * { box-sizing: border-box; }
+    input, button { font-family: inherit; }
+    body {
+      margin: 0;
+      font-family: -apple-system, system-ui, sans-serif;
+      font-size: 18px;
+      background: #f4f1ec;
+      color: #222;
+    }
+    main { max-width: 480px; margin: 0 auto; padding: 16px; }
+    header { display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 26px; margin: 8px 0 16px; }
+    h2 { font-size: 22px; margin: 28px 0 12px; }
+    label { display: block; font-weight: 600; margin: 16px 0 6px; }
+    input {
+      width: 100%;
+      font-size: 18px;          /* 16px or more stops iPhone from zooming in */
+      padding: 14px;
+      border: 1px solid #bbb;
+      border-radius: 10px;
+      background: #fff;
+    }
+    button {
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      min-height: 52px;
+      cursor: pointer;
+    }
+    .lang-btn { background: #fff; border: 1px solid #bbb; padding: 8px 14px; min-height: 44px; }
+    .row { display: flex; gap: 10px; }
+    .row > div { flex: 1; min-width: 0; }   /* min-width: 0 stops the date boxes poking off the screen */
+    input[type="date"] { min-width: 0; min-height: 52px; }
+
+    /* Guest count: minus / number / plus, no typing needed */
+    .stepper { display: flex; align-items: center; gap: 12px; }
+    .stepper button { width: 60px; font-size: 26px; background: #e2ddd4; }
+    .stepper span { font-size: 26px; font-weight: 700; min-width: 40px; text-align: center; }
+
+    /* Source: tap one of four big buttons */
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .choices button { background: #fff; border: 2px solid #ccc; }
+    .choices button.picked { background: #2e7d5b; border-color: #2e7d5b; color: #fff; }
+
+    .summary {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 20px;
+    }
+    .summary div { display: flex; justify-content: space-between; padding: 6px 0; }
+    .summary .big { font-size: 22px; font-weight: 700; border-top: 1px solid #eee; margin-top: 4px; padding-top: 10px; }
+    .save-btn { width: 100%; margin-top: 20px; background: #2e7d5b; color: #fff; font-size: 20px; font-weight: 700; }
+    .error { color: #b3261e; font-weight: 600; margin-top: 12px; min-height: 1em; }
+
+    .booking { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+    .booking .name { font-weight: 700; font-size: 20px; }
+    .booking .small { color: #555; font-size: 16px; margin-top: 4px; }
+    .booking .delete-btn { background: none; color: #b3261e; padding: 8px 0; min-height: 44px; font-size: 16px; }
+    .empty { color: #666; }
+    .helper-link { text-align: center; margin: 32px 0 16px; }
+    .helper-link a { color: #1f7a45; font-weight: 600; padding: 12px; display: inline-block; }
+
+    /* Dashboard: four boxes in a 2 x 2 grid */
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tile { background: #fff; border-radius: 12px; padding: 12px; border-left: 6px solid #2e7d5b; }
+    .tile.warn { border-left-color: #d9822b; }   /* orange = something to follow up */
+    .tile-title { font-size: 15px; color: #555; font-weight: 600; }
+    .tile-amount { font-size: 24px; font-weight: 700; margin: 4px 0; }
+    .tile-detail { font-size: 14px; color: #666; }
+
+    .booking .money { font-weight: 600; font-size: 16px; margin-top: 6px; }
+
+    /* On/off buttons: orange = not done yet, green = done */
+    .toggle {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      background: #fdf0e1;
+      color: #8a4a0b;
+      border: 2px solid #f0c48f;
+      font-size: 16px;
+      text-align: left;
+    }
+    .toggle.done { background: #e6f4ec; color: #1f6b43; border-color: #a8d5bb; }
+
+    /* Fold-out sections on each booking (Payments, WhatsApp): tap the title to open */
+    .fold { margin-top: 10px; border-top: 1px solid #eee; padding-top: 4px; }
+    .fold summary { font-weight: 700; color: #1f7a45; padding: 12px 0; cursor: pointer; }
+    .fold h3 { font-size: 18px; margin: 18px 0 0; }
+    .payment { border-bottom: 1px solid #eee; padding: 8px 0; }
+    .payment-line { font-weight: 600; font-size: 16px; }
+    .quick { display: flex; gap: 8px; margin-bottom: 8px; }
+    .quick button { flex: 1; background: #e2ddd4; font-size: 16px; }
+    .msg-langs { display: flex; gap: 8px; margin: 6px 0 12px; }
+    .msg-langs button { flex: 1; background: #fff; border: 2px solid #ccc; font-size: 16px; padding: 10px 4px; min-height: 48px; }
+    .msg-langs button.picked { background: #2e7d5b; border-color: #2e7d5b; color: #fff; }
+    .wa-btn {
+      display: block;
+      background: #1f8f4e;
+      color: #fff;
+      text-decoration: none;
+      text-align: center;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 8px;
+    }
+
+    /* "One moment..." bar while talking to the server */
+    .status { position: fixed; top: 0; left: 0; right: 0; z-index: 10; background: #2e7d5b; color: #fff; text-align: center; padding: 10px; }
+    .status:empty { display: none; }
+    body.busy button, body.busy a { opacity: 0.5; pointer-events: none; } /* no double taps */
+
+    /* PIN screen */
+    .pin-screen { padding-top: 40px; }
+    .pin-screen input { font-size: 32px; text-align: center; letter-spacing: 8px; }
+  </style>
+</head>
+<body>
+  <div id="status" class="status"></div>
+  <main>
+    <div id="pinScreen" class="pin-screen" hidden>
+      <h1 data-text="pin_title"></h1>
+      <form id="pinForm">
+        <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+        <p class="error" id="pinError"></p>
+        <button class="save-btn" type="submit" data-text="pin_btn"></button>
+      </form>
+    </div>
+
+    <div id="app" hidden>
+    <header>
+      <h1 data-text="dash_title"></h1>
+      <button class="lang-btn" id="langBtn" type="button"></button>
+    </header>
+    <div id="dashboard" class="dashboard"></div>
+
+    <h2 data-text="title"></h2>
+
+    <form id="form" novalidate>
+      <label for="name" data-text="name"></label>
+      <input id="name" autocomplete="off">
+
+      <label for="phone" data-text="phone"></label>
+      <input id="phone" type="tel" inputmode="tel" placeholder="012-345 6789">
+
+      <div class="row">
+        <div>
+          <label for="checkIn" data-text="checkIn"></label>
+          <input id="checkIn" type="date">
+        </div>
+        <div>
+          <label for="checkOut" data-text="checkOut"></label>
+          <input id="checkOut" type="date">
+        </div>
+      </div>
+
+      <label data-text="guests"></label>
+      <div class="stepper">
+        <button type="button" id="guestsMinus" aria-label="-">−</button>
+        <span id="guestsCount">2</span>
+        <button type="button" id="guestsPlus" aria-label="+">+</button>
+      </div>
+
+      <label data-text="source"></label>
+      <div class="choices" id="sourceChoices">
+        <button type="button" data-source="poster" data-text="src_poster"></button>
+        <button type="button" data-source="video" data-text="src_video"></button>
+        <button type="button" data-source="owner_group" data-text="src_owner_group"></button>
+        <button type="button" data-source="repeat" data-text="src_repeat"></button>
+      </div>
+
+      <div class="summary">
+        <div><span data-text="nights"></span><span id="sumNights">0</span></div>
+        <div><span data-text="total"></span><span id="sumTotal">RM0</span></div>
+        <div><span data-text="deposit"></span><span id="sumDeposit">RM0</span></div>
+        <div class="big"><span data-text="balance"></span><span id="sumBalance">RM0</span></div>
+        <div><span data-text="cleaning"></span><span id="sumCleaning">RM0</span></div>
+      </div>
+
+      <p class="error" id="error"></p>
+      <button class="save-btn" type="submit" data-text="save"></button>
+    </form>
+
+    <h2 data-text="list"></h2>
+    <div id="bookings"></div>
+
+    <p class="helper-link"><a href="helper.html" data-text="helperLink"></a></p>
+    <p class="helper-link"><button class="lang-btn" id="logoutBtn" type="button" data-text="logout"></button></p>
+    </div>
+  </main>
+
+  <script src="storage.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="pricing.js"></script>
+  <script src="payments.js"></script>
+  <script src="messages.js"></script>
+  <script src="whatsapp.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

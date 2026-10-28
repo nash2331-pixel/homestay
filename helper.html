@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Helper</title>
+  <style>
+    /* Only today's guests, with very big buttons. */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, system-ui, sans-serif;
+      font-size: 20px;
+      background: #f4f1ec;
+      color: #222;
+    }
+    button, input { font-family: inherit; cursor: pointer; }
+    main { max-width: 480px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 28px; margin: 8px 0 0; }
+    .today { color: #555; margin-bottom: 8px; }
+    h2 { font-size: 22px; margin: 28px 0 12px; }
+    .none { color: #666; }
+
+    .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+    .name { font-size: 24px; font-weight: 700; }
+    .phone { display: inline-block; font-size: 20px; color: #1f6fb2; padding: 8px 0; text-decoration: none; }
+    .collect { font-size: 22px; font-weight: 700; margin-top: 6px; }
+    .paid { font-size: 20px; color: #1f6b43; font-weight: 600; margin-top: 6px; }
+
+    .big-btn {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      min-height: 72px;
+      font-size: 22px;
+      font-weight: 700;
+      border-radius: 14px;
+      border: none;
+    }
+    .cash-btn { background: #1f8f4e; color: #fff; }
+    .tick-btn { background: #fdf0e1; color: #8a4a0b; border: 3px solid #f0c48f; text-align: left; padding: 0 16px; }
+    .tick-btn.done { background: #e6f4ec; color: #1f6b43; border-color: #a8d5bb; }
+    .logout { display: block; margin: 40px auto 16px; background: none; border: none; color: #666; font-size: 16px; padding: 12px; }
+
+    /* "One moment..." bar while talking to the server */
+    .status { position: fixed; top: 0; left: 0; right: 0; z-index: 10; background: #2e7d5b; color: #fff; text-align: center; padding: 10px; }
+    .status:empty { display: none; }
+    body.busy button, body.busy a { opacity: 0.5; pointer-events: none; } /* no double taps */
+
+    /* PIN screen */
+    .pin-screen { padding-top: 40px; }
+    .pin-screen input { width: 100%; font-size: 32px; text-align: center; letter-spacing: 8px; padding: 14px; border: 1px solid #bbb; border-radius: 10px; }
+    .error { color: #b3261e; font-weight: 600; min-height: 1em; }
+  </style>
+</head>
+<body>
+  <div id="status" class="status"></div>
+  <main>
+    <div id="pinScreen" class="pin-screen" hidden>
+      <h1 data-text="pin_title"></h1>
+      <form id="pinForm">
+        <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+        <p class="error" id="pinError"></p>
+        <button class="big-btn cash-btn" type="submit" data-text="pin_btn"></button>
+      </form>
+    </div>
+
+    <div id="app" hidden>
+      <h1 data-text="title"></h1>
+      <div class="today" id="today"></div>
+
+      <h2 data-text="checkIns"></h2>
+      <div id="checkIns"></div>
+
+      <h2 data-text="checkOuts"></h2>
+      <div id="checkOuts"></div>
+
+      <button class="logout" id="logoutBtn" type="button" data-text="logout"></button>
+    </div>
+  </main>
+
+  <script src="storage.js"></script>
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="messages.js"></script>
+  <script src="whatsapp.js"></script>
+  <script src="helper.js"></script>
+</body>
+</html>
